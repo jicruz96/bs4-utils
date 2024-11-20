@@ -58,10 +58,8 @@ class UnorderedList(ABC):
         max_depth: int | None = None,
     ) -> None:
         def _get_text(node: ListItem, depth: int) -> str:
-            if max_depth is not None and depth >= max_depth:
-                return ""
             text = " " * depth * indent + node.text
-            if node.children:
+            if node.children and (max_depth is None or depth < max_depth):
                 return f"{text}\n" + "\n".join(
                     [_get_text(child, depth + 1) for child in node.children]
                 )
