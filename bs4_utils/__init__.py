@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import sys
 from abc import ABC, abstractmethod
 from functools import cached_property
+from typing import Callable, Iterable, Self
 
 from bs4 import BeautifulSoup, Tag
-
-if sys.version_info >= (3, 11):
-    from typing import Self
 
 
 class ListItem(ABC):
@@ -51,6 +48,31 @@ class ListItem(ABC):
             return 0
         return 1 + max(child.height for child in self.children)
 
+    def depth_first_traverse(
+        self,
+        max_depth: int | None = None,
+    ) -> Iterable[ListItem]:
+        if max_depth is not None and self.depth > max_depth:
+            return
+        yield self
+        for child in self.children:
+            yield from child.depth_first_traverse(max_depth=max_depth)
+
+    def breadth_first_traverse(
+        self,
+        max_depth: int | None = None,
+    ) -> Iterable[ListItem]:
+        current_level: list[ListItem] = [self]
+        next_level: list[ListItem] = []
+        while current_level:
+            if max_depth is not None and current_level[0].depth > max_depth:
+                return
+            for item in current_level:
+                yield item
+                next_level.extend(item.children)
+            current_level = next_level
+            next_level = []
+
 
 class UnorderedList(ABC):
     soup: BeautifulSoup
@@ -78,33 +100,42 @@ class UnorderedList(ABC):
     def height(self) -> int:
         return max(item.height for item in self.items)
 
+    def depth_first_traverse(
+        self,
+        max_depth: int | None = None,
+    ) -> Iterable[ListItem]:
+        for item in self.items:
+            yield from item.depth_first_traverse(max_depth=max_depth)
+
+    def breadth_first_traverse(self) -> Iterable[ListItem]:
+        current_level: list[ListItem] = self.items
+        next_level: list[ListItem] = []
+        while current_level:
+            for item in current_level:
+                yield item
+                next_level.extend(item.children)
+            current_level = next_level
+            next_level = []
+
     def save(
         self,
         filename: str,
         indent: int = 2,
         max_depth: int | None = None,
+        item_formatter: Callable[[ListItem], str] | None = None,
     ) -> None:
-        def _get_text(node: ListItem, depth: int) -> str:
-            text = " " * depth * indent + node.text
-            if node.children and (max_depth is None or depth < max_depth):
-                return f"{text}\n" + "\n".join(
-                    [_get_text(child, depth + 1) for child in node.children]
-                )
-            return text
-
-        text: str = "\n".join([_get_text(root, 0) for root in self.items])
+        text = ""
+        for item in self.depth_first_traverse(max_depth=max_depth):
+            if item_formatter:
+                text += item_formatter(item)
+                if not text.endswith("\n"):
+                    text += "\n"
+            else:
+                text += f'{" " * item.depth * indent}{item.text}\n'
         with open(filename, "w") as f:
             f.write(text)
 
-    if sys.version_info >= (3, 11):
-
-        @classmethod
-        def from_file(cls, filename: str) -> Self:
-            with open(filename, "r") as file:
-                return cls(BeautifulSoup(file, "html.parser"))
-    else:
-
-        @classmethod
-        def from_file(cls, filename: str) -> UnorderedList:
-            with open(filename, "r") as file:
-                return cls(BeautifulSoup(file, "html.parser"))
+    @classmethod
+    def from_file(cls, filename: str) -> Self:
+        with open(filename, "r") as file:
+            return cls(BeautifulSoup(file, "html.parser"))

@@ -1,7 +1,10 @@
 import abc
 from abc import ABC, abstractmethod
-from bs4 import BeautifulSoup, Tag
 from functools import cached_property as cached_property
+from typing import Callable, Iterable, Self
+
+from bs4 import BeautifulSoup
+from bs4 import Tag as Tag
 
 class ListItem(ABC, metaclass=abc.ABCMeta):
     def __init__(self, tag: Tag, parent: ListItem | None = None) -> None: ...
@@ -21,6 +24,12 @@ class ListItem(ABC, metaclass=abc.ABCMeta):
     def depth(self) -> int: ...
     @cached_property
     def height(self) -> int: ...
+    def depth_first_traverse(
+        self, max_depth: int | None = None
+    ) -> Iterable[ListItem]: ...
+    def breadth_first_traverse(
+        self, max_depth: int | None = None
+    ) -> Iterable[ListItem]: ...
 
 class UnorderedList(ABC, metaclass=abc.ABCMeta):
     soup: BeautifulSoup
@@ -34,6 +43,16 @@ class UnorderedList(ABC, metaclass=abc.ABCMeta):
     def items(self) -> list[ListItem]: ...
     @cached_property
     def height(self) -> int: ...
-    def save(self, filename: str, indent: int = 2, max_depth: int | None = None) -> None: ...
+    def depth_first_traverse(
+        self, max_depth: int | None = None
+    ) -> Iterable[ListItem]: ...
+    def breadth_first_traverse(self) -> Iterable[ListItem]: ...
+    def save(
+        self,
+        filename: str,
+        indent: int = 2,
+        max_depth: int | None = None,
+        item_formatter: Callable[[ListItem], str] | None = None,
+    ) -> None: ...
     @classmethod
-    def from_file(cls, filename: str) -> UnorderedList: ...
+    def from_file(cls, filename: str) -> Self: ...
