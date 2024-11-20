@@ -55,8 +55,11 @@ class UnorderedList(ABC):
         self,
         filename: str,
         indent: int = 2,
+        max_depth: int | None = None,
     ) -> None:
         def _get_text(node: ListItem, depth: int) -> str:
+            if max_depth is not None and depth >= max_depth:
+                return ""
             text = " " * depth * indent + node.text
             if node.children:
                 return f"{text}\n" + "\n".join(
