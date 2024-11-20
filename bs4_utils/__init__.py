@@ -11,22 +11,45 @@ if sys.version_info >= (3, 11):
 
 
 class ListItem(ABC):
-    text: str
-    children: list[ListItem]
+    def __init__(self, tag: Tag, parent: ListItem | None = None) -> None:
+        self.__tag = tag
+        self.__parent = parent
 
-    def __init__(self, li: Tag) -> None:
-        self.text = self.init_text(li)
-        self.children = self.init_children(li)
+    @property
+    def parent(self) -> ListItem | None:
+        return self.__parent
 
-    @classmethod
+    @property
+    def tag(self) -> Tag:
+        return self.__tag
+
+    @cached_property
+    def children(self) -> list[ListItem]:
+        return self.init_children()
+
+    @cached_property
+    def text(self) -> str:
+        return self.init_text()
+
     @abstractmethod
-    def init_children(cls, li: Tag) -> list[ListItem]:
+    def init_children(self) -> list[ListItem]:
         pass
 
-    @classmethod
     @abstractmethod
-    def init_text(cls, li: Tag) -> str:
+    def init_text(self) -> str:
         pass
+
+    @cached_property
+    def depth(self) -> int:
+        if self.parent is None:
+            return 0
+        return self.parent.depth + 1
+
+    @cached_property
+    def height(self) -> int:
+        if not self.children:
+            return 0
+        return 1 + max(child.height for child in self.children)
 
 
 class UnorderedList(ABC):
@@ -50,6 +73,10 @@ class UnorderedList(ABC):
             self.list_item_class(li)
             for li in self.get_root_ul().find_all("li", recursive=False)
         ]
+
+    @cached_property
+    def height(self) -> int:
+        return max(item.height for item in self.items)
 
     def save(
         self,

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bs4-utils"
-version = "0.1.4"
+version = "0.2.0"
 description = "A BeautifulSoup wrapper with helpful utils."
 authors = ["J.I. Cruz <hello@jicruz.com>"]
 license = "MIT"
