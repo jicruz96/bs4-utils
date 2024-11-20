@@ -1,12 +1,11 @@
 import abc
-from _typeshed import Incomplete
 from abc import ABC, abstractmethod
 from bs4 import BeautifulSoup, Tag
 from functools import cached_property as cached_property
 
 class ListItem(ABC, metaclass=abc.ABCMeta):
-    text: Incomplete
-    children: Incomplete
+    text: str
+    children: list[ListItem]
     def __init__(self, li: Tag) -> None: ...
     @classmethod
     @abstractmethod
@@ -16,7 +15,7 @@ class ListItem(ABC, metaclass=abc.ABCMeta):
     def init_text(cls, li: Tag) -> str: ...
 
 class UnorderedList(ABC, metaclass=abc.ABCMeta):
-    soup: Incomplete
+    soup: BeautifulSoup
     def __init__(self, soup: BeautifulSoup) -> None: ...
     @property
     @abstractmethod
@@ -25,6 +24,6 @@ class UnorderedList(ABC, metaclass=abc.ABCMeta):
     def get_root_ul(self) -> Tag: ...
     @cached_property
     def items(self) -> list[ListItem]: ...
-    def save(self, filename: str) -> None: ...
+    def save(self, filename: str, indent: int = 2) -> None: ...
     @classmethod
     def from_file(cls, filename: str) -> UnorderedList: ...

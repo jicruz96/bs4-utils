@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import sys
 from abc import ABC, abstractmethod
 from functools import cached_property
-import sys
-
 
 from bs4 import BeautifulSoup, Tag
 
@@ -12,6 +11,9 @@ if sys.version_info >= (3, 11):
 
 
 class ListItem(ABC):
+    text: str
+    children: list[ListItem]
+
     def __init__(self, li: Tag) -> None:
         self.text = self.init_text(li)
         self.children = self.init_children(li)
@@ -28,6 +30,8 @@ class ListItem(ABC):
 
 
 class UnorderedList(ABC):
+    soup: BeautifulSoup
+
     def __init__(self, soup: BeautifulSoup) -> None:
         self.soup = soup
 
@@ -47,9 +51,13 @@ class UnorderedList(ABC):
             for li in self.get_root_ul().find_all("li", recursive=False)
         ]
 
-    def save(self, filename: str) -> None:
+    def save(
+        self,
+        filename: str,
+        indent: int = 2,
+    ) -> None:
         def _get_text(node: ListItem, depth: int) -> str:
-            text = " " * depth * 2 + node.text
+            text = " " * depth * indent + node.text
             if node.children:
                 return f"{text}\n" + "\n".join(
                     [_get_text(child, depth + 1) for child in node.children]
